@@ -22,8 +22,8 @@ Pod::Spec.new do |s|
 
   s.subspec "Core" do |ss|
     ss.source_files  = "Source/*.swift", "Source/Plugins/*swift"
-    ss.dependency "Alamofire",
-    ss.dependency "Result",
+    ss.dependency "Alamofire"
+    ss.dependency "Result"
     ss.framework  = "Foundation"
   end
 
