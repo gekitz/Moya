@@ -16,7 +16,7 @@ public class ReactiveCocoaMoyaProvider<Target where Target: TargetType>: MoyaPro
     }
     
     /// Designated request-making method.
-    public func request(token: Target) -> SignalProducer<Response, Error> {
+    public func request(_ token: Target) -> SignalProducer<Response, Error> {
         
         // Creates a producer that starts a request each time it's started.
         return SignalProducer { [weak self] observer, requestDisposable in
@@ -38,7 +38,7 @@ public class ReactiveCocoaMoyaProvider<Target where Target: TargetType>: MoyaPro
         }
     }
 
-    override func stubRequest(target: Target, request: NSURLRequest, completion: Moya.Completion, endpoint: Endpoint<Target>, stubBehavior: Moya.StubBehavior) -> CancellableToken {
+    override func stubRequest(_ target: Target, request: URLRequest, completion: Moya.Completion, endpoint: Endpoint<Target>, stubBehavior: Moya.StubBehavior) -> CancellableToken {
         guard let stubScheduler = self.stubScheduler else {
             return super.stubRequest(target, request: request, completion: completion, endpoint: endpoint, stubBehavior: stubBehavior)
         }
@@ -50,12 +50,12 @@ public class ReactiveCocoaMoyaProvider<Target where Target: TargetType>: MoyaPro
         let stub = createStubFunction(token, forTarget: target, withCompletion: completion, endpoint: endpoint, plugins: plugins)
 
         switch stubBehavior {
-        case .Immediate:
+        case .immediate:
             dis = stubScheduler.schedule(stub)
-        case .Delayed(let seconds):
-            let date = NSDate(timeIntervalSinceNow: seconds)
+        case .delayed(let seconds):
+            let date = Date(timeIntervalSinceNow: seconds)
             dis = stubScheduler.scheduleAfter(date, action: stub)
-        case .Never:
+        case .never:
             fatalError("Attempted to stub request when behavior requested was never stub!")
         }
         return token

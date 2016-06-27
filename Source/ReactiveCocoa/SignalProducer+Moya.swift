@@ -5,13 +5,13 @@ import ReactiveCocoa
 extension SignalProducerType where Value == Response, Error == Moya.Error {
     
     /// Filters out responses that don't fall within the given range, generating errors when others are encountered.
-    public func filterStatusCodes(range: ClosedInterval<Int>) -> SignalProducer<Value, Error> {
+    public func filterStatusCodes(_ range: ClosedInterval<Int>) -> SignalProducer<Value, Error> {
         return producer.flatMap(.Latest) { response -> SignalProducer<Value, Error> in
             return unwrapThrowable { try response.filterStatusCodes(range) }
         }
     }
     
-    public func filterStatusCode(code: Int) -> SignalProducer<Value, Error> {
+    public func filterStatusCode(_ code: Int) -> SignalProducer<Value, Error> {
         return producer.flatMap(.Latest) { response -> SignalProducer<Value, Error> in
             return unwrapThrowable { try response.filterStatusCode(code) }
         }
@@ -52,7 +52,7 @@ extension SignalProducerType where Value == Response, Error == Moya.Error {
 }
 
 /// Maps throwable to SignalProducer
-private func unwrapThrowable<T>(throwable: () throws -> T) -> SignalProducer<T, Error> {
+private func unwrapThrowable<T>(_ throwable: () throws -> T) -> SignalProducer<T, Error> {
     do {
         return SignalProducer(value: try throwable())
     } catch {

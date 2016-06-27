@@ -11,7 +11,7 @@ class ViewController: UITableViewController {
 
     // MARK: - API Stuff
 
-    func downloadRepositories(username: String) {
+    func downloadRepositories(_ username: String) {
         GitHubProvider.request(.UserRepositories(username), completion: { result in
 
             var success = true
@@ -68,38 +68,38 @@ class ViewController: UITableViewController {
 
     // MARK: - User Interaction
 
-    @IBAction func searchWasPressed(sender: UIBarButtonItem) {
+    @IBAction func searchWasPressed(_ sender: UIBarButtonItem) {
         var usernameTextField: UITextField?
 
-        let promptController = UIAlertController(title: "Username", message: nil, preferredStyle: .Alert)
-        let ok = UIAlertAction(title: "OK", style: .Default, handler: { (action) -> Void in
+        let promptController = UIAlertController(title: "Username", message: nil, preferredStyle: .alert)
+        let ok = UIAlertAction(title: "OK", style: .default, handler: { (action) -> Void in
             if let usernameTextField = usernameTextField {
                 self.downloadRepositories(usernameTextField.text!)
             }
         })
-        _ = UIAlertAction(title: "Cancel", style: .Cancel) { (action) -> Void in
+        _ = UIAlertAction(title: "Cancel", style: .cancel) { (action) -> Void in
         }
         promptController.addAction(ok)
-        promptController.addTextFieldWithConfigurationHandler { (textField) -> Void in
+        promptController.addTextField { (textField) -> Void in
             usernameTextField = textField
         }
-        presentViewController(promptController, animated: true, completion: nil)
+        present(promptController, animated: true, completion: nil)
     }
 
-    @IBAction func zenWasPressed(sender: UIBarButtonItem) {
+    @IBAction func zenWasPressed(_ sender: UIBarButtonItem) {
         downloadZen()
     }
 
     // MARK: - Table View
 
-    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return repos.count
     }
 
-    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath) as UITableViewCell
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as UITableViewCell
 
-        let object = repos[indexPath.row] as! NSDictionary
+        let object = repos[(indexPath as NSIndexPath).row] as! NSDictionary
         (cell.textLabel as UILabel!).text = object["name"] as? String
         return cell
     }

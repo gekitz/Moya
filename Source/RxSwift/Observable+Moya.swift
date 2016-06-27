@@ -5,13 +5,13 @@ import RxSwift
 extension ObservableType where E == Response {
     
     /// Filters out responses that don't fall within the given range, generating errors when others are encountered.
-    public func filterStatusCodes(range: ClosedInterval<Int>) -> Observable<E> {
+    public func filterStatusCodes(_ range: ClosedInterval<Int>) -> Observable<E> {
         return flatMap { response -> Observable<E> in
             return Observable.just(try response.filterStatusCodes(range))
         }
     }
     
-    public func filterStatusCode(code: Int) -> Observable<E> {
+    public func filterStatusCode(_ code: Int) -> Observable<E> {
         return flatMap { response -> Observable<E> in
             return Observable.just(try response.filterStatusCode(code))
         }
