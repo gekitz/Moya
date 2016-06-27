@@ -32,7 +32,7 @@ public final class NetworkLoggerPlugin: PluginType {
     }
 
     public func didReceiveResponse(_ result: Result<Moya.Response, Moya.Error>, target: TargetType) {
-        if case .Success(let response) = result {
+        if case .success(let response) = result {
             outputItems(logNetworkResponse(response.response, data: response.data, target: target))
         } else {
             outputItems(logNetworkResponse(nil, data: nil, target: target))

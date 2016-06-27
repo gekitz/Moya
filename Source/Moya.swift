@@ -10,9 +10,9 @@ public enum Method: String {
 }
 
 public enum StubBehavior {
-    case Never
-    case Immediate
-    case Delayed(seconds: TimeInterval)
+    case never
+    case immediate
+    case delayed(seconds: TimeInterval)
 }
 
 /// Protocol to define the base URL, path, method, parameters and sample data for a target.
@@ -28,7 +28,7 @@ public enum StructTarget: TargetType {
     case Struct(TargetType)
     
     public init(_ target: TargetType) {
-        self = StructTarget.struct(target)
+        self = StructTarget.Struct(target)
     }
     
     public var path: String {
@@ -70,7 +70,7 @@ public class MoyaProvider<Target: TargetType> {
     public typealias EndpointClosure = (Target) -> Endpoint<Target>
     
     /// Closure that decides if and what request should be performed
-    public typealias RequestResultClosure = (Result<NSURLRequest, Moya.Error>) -> Void
+    public typealias RequestResultClosure = (Result<URLRequest, Moya.Error>) -> Void
     
     /// Closure that resolves an Endpoint into an RequestResult.
     public typealias RequestClosure = (Endpoint<Target>, RequestResultClosure) -> Void
@@ -135,28 +135,28 @@ public class MoyaProvider<Target: TargetType> {
         }
         
         
-        let performNetworking = { (requestResult: Result<NSURLRequest, Moya.Error>) in
+        let performNetworking = { (requestResult: Result<URLRequest, Moya.Error>) in
             if cancellableToken.isCancelled { return }
             
-            var request: NSURLRequest!
+            var request: URLRequest!
             
             switch requestResult {
-            case .Success(let urlRequest):
+            case .success(let urlRequest):
                 request = urlRequest
-            case .Failure(let error):
-                completion(result: .Failure(error))
+            case .failure(let error):
+                completion(result: .failure(error))
                 return
             }
             
             switch stubBehavior {
-            case .Never:
+            case .never:
                 cancellableToken.innerCancellable = self.sendRequest(target, request: request, queue: queue, completion: { result in
                     
                     if self.trackInflights {
                         self.inflightRequests[endpoint]?.forEach({ $0(result: result) })
                         
                         objc_sync_enter(self)
-                        self.inflightRequests.removeValueForKey(endpoint)
+                        self.inflightRequests.removeValue(forKey: endpoint)
                         objc_sync_exit(self)
                     } else {
                         completion(result: result)
@@ -168,7 +168,7 @@ public class MoyaProvider<Target: TargetType> {
                         self.inflightRequests[endpoint]?.forEach({ $0(result: result) })
                         
                         objc_sync_enter(self)
-                        self.inflightRequests.removeValueForKey(endpoint)
+                        self.inflightRequests.removeValue(forKey: endpoint)
                         objc_sync_exit(self)
                     } else {
                         completion(result: result)
@@ -218,17 +218,17 @@ public extension MoyaProvider {
     // These functions are default mappings to MoyaProvider's properties: endpoints, requests, manager, etc.
     
     public final class func DefaultEndpointMapping(_ target: Target) -> Endpoint<Target> {
-        let url = try! target.baseURL.appendingPathComponent(target.path).absoluteString
+        let url = try! target.baseURL.appendingPathComponent(target.path).absoluteString!
         return Endpoint(URL: url, sampleResponseClosure: {.NetworkResponse(200, target.sampleData)}, method: target.method, parameters: target.parameters)
     }
     
     public final class func DefaultRequestMapping(_ endpoint: Endpoint<Target>, closure: RequestResultClosure) {
-        return closure(.Success(endpoint.urlRequest))
+        return closure(.success(endpoint.urlRequest))
     }
     
     public final class func DefaultAlamofireManager() -> Manager {
         let configuration = URLSessionConfiguration.default()
-        configuration.HTTPAdditionalHeaders = Manager.defaultHTTPHeaders
+        configuration.httpAdditionalHeaders = Manager.defaultHTTPHeaders
         
         let manager = Manager(configuration: configuration)
         manager.startRequestsImmediately = false
@@ -244,15 +244,15 @@ public extension MoyaProvider {
     // at least add some class functions to allow easy access to common stubbing closures.
     
     public final class func NeverStub(_: Target) -> Moya.StubBehavior {
-        return .Never
+        return .never
     }
     
     public final class func ImmediatelyStub(_: Target) -> Moya.StubBehavior {
-        return .Immediate
+        return .immediate
     }
     
     public final class func DelayedStub(_ seconds: TimeInterval) -> (Target) -> Moya.StubBehavior {
-        return { _ in return .Delayed(seconds: seconds) }
+        return { _ in return .delayed(seconds: seconds) }
     }
 }
 
@@ -282,21 +282,21 @@ internal extension MoyaProvider {
     internal final func createStubFunction(_ token: CancellableToken, forTarget target: Target, withCompletion completion: Moya.Completion, endpoint: Endpoint<Target>, plugins: [PluginType]) -> (() -> ()) {
         return {
             if (token.canceled) {
-                let error = Moya.Error.Underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled, userInfo: nil))
-                plugins.forEach { $0.didReceiveResponse(.Failure(error), target: target) }
-                completion(result: .Failure(error))
+                let error = Moya.Error.underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled, userInfo: nil))
+                plugins.forEach { $0.didReceiveResponse(.failure(error), target: target) }
+                completion(result: .failure(error))
                 return
             }
             
             switch endpoint.sampleResponseClosure() {
             case .NetworkResponse(let statusCode, let data):
                 let response = Moya.Response(statusCode: statusCode, data: data, response: nil)
-                plugins.forEach { $0.didReceiveResponse(.Success(response), target: target) }
-                completion(result: .Success(response))
+                plugins.forEach { $0.didReceiveResponse(.success(response), target: target) }
+                completion(result: .success(response))
             case .NetworkError(let error):
-                let error = Moya.Error.Underlying(error)
-                plugins.forEach { $0.didReceiveResponse(.Failure(error), target: target) }
-                completion(result: .Failure(error))
+                let error = Moya.Error.underlying(error)
+                plugins.forEach { $0.didReceiveResponse(.failure(error), target: target) }
+                completion(result: .failure(error))
             }
         }
     }
@@ -308,18 +308,18 @@ internal extension MoyaProvider {
     }
 }
 
-public func convertResponseToResult(_ response: NSHTTPURLResponse?, data: NSData?, error: NSError?) ->
+public func convertResponseToResult(_ response: HTTPURLResponse?, data: Data?, error: NSError?) ->
     Result<Moya.Response, Moya.Error> {
     switch (response, data, error) {
-    case let (.Some(response), .Some(data), .None):
+    case let (.some(response), .some(data), .none):
         let response = Moya.Response(statusCode: response.statusCode, data: data, response: response)
-        return .Success(response)
-    case let (_, _, .Some(error)):
-        let error = Moya.Error.Underlying(error)
-        return .Failure(error)
+        return .success(response)
+    case let (_, _, .some(error)):
+        let error = Moya.Error.underlying(error)
+        return .failure(error)
     default:
         let error = Moya.Error.underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorUnknown, userInfo: nil))
-        return .Failure(error)
+        return .failure(error)
     }
 }
 

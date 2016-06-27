@@ -27,7 +27,7 @@ public class Endpoint<Target> {
         sampleResponseClosure: SampleResponseClosure,
         method: Moya.Method = Moya.Method.GET,
         parameters: [String: AnyObject]? = nil,
-        parameterEncoding: Moya.ParameterEncoding = .URL,
+        parameterEncoding: Moya.ParameterEncoding = .url,
         httpHeaderFields: [String: String]? = nil) {
 
         self.URL = URL
@@ -89,7 +89,7 @@ public class Endpoint<Target> {
 /// Extension for converting an Endpoint into an NSURLRequest.
 extension Endpoint {
     public var urlRequest: URLRequest {
-        let request: NSMutableURLRequest = NSMutableURLRequest(url: Foundation.URL(string: URL)!)
+        var request: URLRequest = URLRequest(url: Foundation.URL(string: URL)!)
         request.httpMethod = method.rawValue
         request.allHTTPHeaderFields = httpHeaderFields
 
