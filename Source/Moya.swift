@@ -10,9 +10,9 @@ public enum Method: String {
 }
 
 public enum StubBehavior {
-    case never
-    case immediate
-    case delayed(seconds: TimeInterval)
+    case Never
+    case Immediate
+    case Delayed(seconds: TimeInterval)
 }
 
 /// Protocol to define the base URL, path, method, parameters and sample data for a target.
@@ -25,7 +25,7 @@ public protocol TargetType {
 }
 
 public enum StructTarget: TargetType {
-    case `struct`(TargetType)
+    case Struct(TargetType)
     
     public init(_ target: TargetType) {
         self = StructTarget.struct(target)
@@ -53,7 +53,7 @@ public enum StructTarget: TargetType {
     
     public var target: TargetType {
         switch self {
-        case .struct(let t): return t
+        case .Struct(let t): return t
         }
     }
 }
@@ -244,15 +244,15 @@ public extension MoyaProvider {
     // at least add some class functions to allow easy access to common stubbing closures.
     
     public final class func NeverStub(_: Target) -> Moya.StubBehavior {
-        return .never
+        return .Never
     }
     
     public final class func ImmediatelyStub(_: Target) -> Moya.StubBehavior {
-        return .immediate
+        return .Immediate
     }
     
     public final class func DelayedStub(_ seconds: TimeInterval) -> (Target) -> Moya.StubBehavior {
-        return { _ in return .delayed(seconds: seconds) }
+        return { _ in return .Delayed(seconds: seconds) }
     }
 }
 
