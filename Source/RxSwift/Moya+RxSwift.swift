@@ -20,11 +20,11 @@ public class RxMoyaProvider<Target where Target: TargetType>: MoyaProvider<Targe
         return Observable.create { [weak self] observer in
             let cancellableToken = self?.request(token) { result in
                 switch result {
-                case let .Success(response):
+                case let .success(response):
                     observer.onNext(response)
                     observer.onCompleted()
                     break
-                case let .Failure(error):
+                case let .failure(error):
                     observer.onError(error)
                 }
             }

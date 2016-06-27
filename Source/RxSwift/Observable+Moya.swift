@@ -5,7 +5,7 @@ import RxSwift
 extension ObservableType where E == Response {
     
     /// Filters out responses that don't fall within the given range, generating errors when others are encountered.
-    public func filterStatusCodes(_ range: ClosedInterval<Int>) -> Observable<E> {
+    public func filterStatusCodes(_ range: ClosedRange<Int>) -> Observable<E> {
         return flatMap { response -> Observable<E> in
             return Observable.just(try response.filterStatusCodes(range))
         }
@@ -30,8 +30,8 @@ extension ObservableType where E == Response {
     }
     
     /// Maps data received from the signal into a UIImage. If the conversion fails, the signal errors.
-    public func mapImage() -> Observable<Image!> {
-        return flatMap { response -> Observable<Image!> in
+    public func mapImage() -> Observable<Image> {
+        return flatMap { response -> Observable<Image> in
             return Observable.just(try response.mapImage())
         }
     }
