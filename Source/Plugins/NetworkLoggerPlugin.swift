@@ -9,14 +9,14 @@ public final class NetworkLoggerPlugin: PluginType {
     private let separator = ", "
     private let terminator = "\n"
     private let cURLTerminator = "\\\n"
-    private let output: (items: Any..., separator: String, terminator: String) -> Void
+    private let output: (_ items: Any..., _ separator: String, _ terminator: String) -> Void
     private let responseDataFormatter: ((Data) -> (Data))?
     
     /// If true, also logs response body data.
     public let verbose: Bool
     public let cURL: Bool
 
-    public init(verbose: Bool = false, cURL: Bool = false, output: (items: Any..., separator: String, terminator: String) -> Void = print, responseDataFormatter: ((Data) -> (Data))? = nil) {
+    public init(verbose: Bool = false, cURL: Bool = false, output: (_ items: Any..., _ separator: String, _ terminator: String) -> Void = print, responseDataFormatter: ((Data) -> (Data))? = nil) {
         self.cURL = cURL
         self.verbose = verbose
         self.output = output
@@ -24,7 +24,7 @@ public final class NetworkLoggerPlugin: PluginType {
     }
 
     public func willSendRequest(_ request: RequestType, target: TargetType) {
-        if let request = request as? CustomDebugStringConvertible where cURL {
+        if let request = request as? CustomDebugStringConvertible, cURL {
             output(items: request.debugDescription, separator: separator, terminator: terminator)
             return
         }
@@ -78,7 +78,7 @@ private extension NetworkLoggerPlugin {
             output += [format(loggerId, date: date, identifier: "HTTP Request Method", message: httpMethod)]
         }
 
-        if let body = request?.httpBody where verbose == true {
+        if let body = request?.httpBody, verbose == true {
             if let stringOutput = NSString(data: body, encoding: String.Encoding.utf8.rawValue) as? String {
                 output += [format(loggerId, date: date, identifier: "Request Body", message: stringOutput)]
             }
@@ -96,7 +96,7 @@ private extension NetworkLoggerPlugin {
 
         output += [format(loggerId, date: date, identifier: "Response", message: response.description)]
 
-        if let data = data where verbose == true {
+        if let data = data, verbose == true {
             if let stringData = String(data: responseDataFormatter?(data) ?? data , encoding: String.Encoding.utf8) {
                 output += [stringData]
             }
