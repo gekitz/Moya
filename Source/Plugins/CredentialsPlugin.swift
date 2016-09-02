@@ -19,7 +19,7 @@ public final class CredentialsPlugin: PluginType {
         }
     }
 
-    public func didReceiveResponse(_ result: Result<Moya.Response, Moya.Error>, target: TargetType) {
+    public func didReceiveResponse(_ result: Result<Moya.Response, MoyaError>, target: TargetType) {
         
     }
 }

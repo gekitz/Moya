@@ -1,6 +1,6 @@
 import Foundation
 
-public enum Error: ErrorProtocol {
+public enum MoyaError: Error {
     case imageMapping(Response)
     case jsonMapping(Response)
     case stringMapping(Response)
@@ -9,7 +9,7 @@ public enum Error: ErrorProtocol {
     case underlying(NSError)
 }
 
-public extension Moya.Error {
+public extension MoyaError {
     /// Depending on error type, returns a Response object.
     var response: Moya.Response? {
         switch self {

@@ -9,7 +9,7 @@ public enum NetworkActivityChangeType {
 /// Notify a request's network activity changes (request begins or ends).
 public final class NetworkActivityPlugin: PluginType {
     
-    public typealias NetworkActivityClosure = (change: NetworkActivityChangeType) -> ()
+    public typealias NetworkActivityClosure = (_ change: NetworkActivityChangeType) -> ()
     let networkActivityClosure: NetworkActivityClosure
     
     public init(networkActivityClosure: NetworkActivityClosure) {

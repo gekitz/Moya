@@ -12,7 +12,7 @@ public protocol PluginType {
     func willSendRequest(_ request: RequestType, target: TargetType)
 
     // Called after a response has been received, but before the MoyaProvider has invoked its completion handler.
-    func didReceiveResponse(_ result: Result<Moya.Response, Moya.Error>, target: TargetType)
+    func didReceiveResponse(_ result: Result<Moya.Response, MoyaError>, target: TargetType)
 }
 
 /// Request type used by willSendRequest plugin function.

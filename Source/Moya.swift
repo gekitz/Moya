@@ -2,7 +2,7 @@ import Foundation
 import Result
 
 /// Closure to be executed when a request has completed.
-public typealias Completion = (result: Result<Moya.Response, Moya.Error>) -> ()
+public typealias Completion = (_ result: Result<Moya.Response, MoyaError>) -> ()
 
 /// Represents an HTTP method.
 public enum Method: String {
@@ -70,7 +70,7 @@ public class MoyaProvider<Target: TargetType> {
     public typealias EndpointClosure = (Target) -> Endpoint<Target>
     
     /// Closure that decides if and what request should be performed
-    public typealias RequestResultClosure = (Result<URLRequest, Moya.Error>) -> Void
+    public typealias RequestResultClosure = (Result<URLRequest, MoyaError>) -> Void
     
     /// Closure that resolves an Endpoint into an RequestResult.
     public typealias RequestClosure = (Endpoint<Target>, RequestResultClosure) -> Void
