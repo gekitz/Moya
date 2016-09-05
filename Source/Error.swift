@@ -6,7 +6,7 @@ public enum MoyaError: Error {
     case stringMapping(Response)
     case statusCode(Response)
     case data(Response)
-    case underlying(NSError)
+    case underlying(Error)
 }
 
 public extension MoyaError {

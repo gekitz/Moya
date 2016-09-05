@@ -266,12 +266,13 @@ internal extension MoyaProvider {
         plugins.forEach { $0.willSendRequest(alamoRequest, target: target) }
         
         // Perform the actual request
-        alamoRequest.responseData(queue: queue) { (result) -> () in
-//            let result = convertResponseToResult(response, data: data, error: error)
-//            // Inform all plugins about the response
-//            plugins.forEach { $0.didReceiveResponse(result, target: target) }
-//            completion(result: result)
-        }
+        
+        alamoRequest.responseHandler(queue: queue, completionHandler: { (request, response, data, error) -> Void in
+            let result = convertResponseToResult(response, data: data, error: error)
+            // Inform all plugins about the response
+            plugins.forEach { $0.didReceiveResponse(result, target: target) }
+            completion(result)
+        })
         
         alamoRequest.resume()
         
@@ -308,7 +309,7 @@ internal extension MoyaProvider {
     }
 }
 
-public func convertResponseToResult(_ response: HTTPURLResponse?, data: Data?, error: NSError?) ->
+public func convertResponseToResult(_ response: HTTPURLResponse?, data: Data?, error: Error?) ->
     Result<Moya.Response, MoyaError> {
     switch (response, data, error) {
     case let (.some(response), .some(data), .none):
