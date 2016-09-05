@@ -20,7 +20,7 @@ public protocol TargetType {
     var baseURL: URL { get }
     var path: String { get }
     var method: Moya.Method { get }
-    var parameters: [String: AnyObject]? { get }
+    var parameters: [String: Any]? { get }
     var sampleData: Data { get }
 }
 
@@ -43,7 +43,7 @@ public enum StructTarget: TargetType {
         return target.method
     }
     
-    public var parameters: [String: AnyObject]? {
+    public var parameters: [String: Any]? {
         return target.parameters
     }
     
@@ -135,7 +135,7 @@ public class MoyaProvider<Target: TargetType> {
         }
         
         
-        let performNetworking = { (requestResult: Result<URLRequest, Moya.Error>) in
+        let performNetworking = { (requestResult: Result<URLRequest, MoyaError>) in
             if cancellableToken.isCancelled { return }
             
             var request: URLRequest!
@@ -144,7 +144,7 @@ public class MoyaProvider<Target: TargetType> {
             case .success(let urlRequest):
                 request = urlRequest
             case .failure(let error):
-                completion(result: .failure(error))
+                completion(.failure(error))
                 return
             }
             
@@ -153,25 +153,25 @@ public class MoyaProvider<Target: TargetType> {
                 cancellableToken.innerCancellable = self.sendRequest(target, request: request, queue: queue, completion: { result in
                     
                     if self.trackInflights {
-                        self.inflightRequests[endpoint]?.forEach({ $0(result: result) })
+                        self.inflightRequests[endpoint]?.forEach({ $0(result) })
                         
                         objc_sync_enter(self)
                         self.inflightRequests.removeValue(forKey: endpoint)
                         objc_sync_exit(self)
                     } else {
-                        completion(result: result)
+                        completion(result)
                     }
                 })
             default:
                 cancellableToken.innerCancellable = self.stubRequest(target, request: request, completion: { result in
                     if self.trackInflights {
-                        self.inflightRequests[endpoint]?.forEach({ $0(result: result) })
+                        self.inflightRequests[endpoint]?.forEach({ $0(result) })
                         
                         objc_sync_enter(self)
                         self.inflightRequests.removeValue(forKey: endpoint)
                         objc_sync_exit(self)
                     } else {
-                        completion(result: result)
+                        completion(result)
                     }
                 }, endpoint: endpoint, stubBehavior: stubBehavior)
             }
@@ -200,7 +200,7 @@ public class MoyaProvider<Target: TargetType> {
         case .delayed(let delay):
             let killTimeOffset = Int64(CDouble(delay) * CDouble(NSEC_PER_SEC))
             let killTime = DispatchTime.now() + Double(killTimeOffset) / Double(NSEC_PER_SEC)
-            DispatchQueue.main.after(when: killTime) {
+            DispatchQueue.main.asyncAfter(deadline: killTime) {
                 stub()
             }
         case .never:
@@ -218,8 +218,8 @@ public extension MoyaProvider {
     // These functions are default mappings to MoyaProvider's properties: endpoints, requests, manager, etc.
     
     public final class func DefaultEndpointMapping(_ target: Target) -> Endpoint<Target> {
-        let url = try! target.baseURL.appendingPathComponent(target.path).absoluteString!
-        return Endpoint(URL: url, sampleResponseClosure: {.NetworkResponse(200, target.sampleData)}, method: target.method, parameters: target.parameters)
+        let url = try! target.baseURL.appendingPathComponent(target.path).absoluteString
+        return Endpoint(URL: url, sampleResponseClosure: {.NetworkResponse(200, target.sampleData)}, method: target.method, parameters: target.parameters as [String : AnyObject]?)
     }
     
     public final class func DefaultRequestMapping(_ endpoint: Endpoint<Target>, closure: RequestResultClosure) {
@@ -227,7 +227,7 @@ public extension MoyaProvider {
     }
     
     public final class func DefaultAlamofireManager() -> Manager {
-        let configuration = URLSessionConfiguration.default()
+        let configuration = URLSessionConfiguration.default
         configuration.httpAdditionalHeaders = Manager.defaultHTTPHeaders
         
         let manager = Manager(configuration: configuration)
@@ -263,14 +263,14 @@ internal extension MoyaProvider {
         let plugins = self.plugins
 
         // Give plugins the chance to alter the outgoing request
-      plugins.forEach { $0.willSendRequest(alamoRequest, target: target) }
+        plugins.forEach { $0.willSendRequest(alamoRequest, target: target) }
         
         // Perform the actual request
-        alamoRequest.response(queue: queue) { (_, response: HTTPURLResponse?, data: Data?, error: NSError?) -> () in
-            let result = convertResponseToResult(response, data: data, error: error)
-            // Inform all plugins about the response
-            plugins.forEach { $0.didReceiveResponse(result, target: target) }
-            completion(result: result)
+        alamoRequest.responseData(queue: queue) { (result) -> () in
+//            let result = convertResponseToResult(response, data: data, error: error)
+//            // Inform all plugins about the response
+//            plugins.forEach { $0.didReceiveResponse(result, target: target) }
+//            completion(result: result)
         }
         
         alamoRequest.resume()
@@ -282,9 +282,9 @@ internal extension MoyaProvider {
     internal final func createStubFunction(_ token: CancellableToken, forTarget target: Target, withCompletion completion: Moya.Completion, endpoint: Endpoint<Target>, plugins: [PluginType]) -> (() -> ()) {
         return {
             if (token.canceled) {
-                let error = Moya.Error.underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled, userInfo: nil))
+                let error = MoyaError.underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled, userInfo: nil))
                 plugins.forEach { $0.didReceiveResponse(.failure(error), target: target) }
-                completion(result: .failure(error))
+                completion(.failure(error))
                 return
             }
             
@@ -292,11 +292,11 @@ internal extension MoyaProvider {
             case .NetworkResponse(let statusCode, let data):
                 let response = Moya.Response(statusCode: statusCode, data: data, response: nil)
                 plugins.forEach { $0.didReceiveResponse(.success(response), target: target) }
-                completion(result: .success(response))
+                completion(.success(response))
             case .NetworkError(let error):
-                let error = Moya.Error.underlying(error)
+                let error = MoyaError.underlying(error)
                 plugins.forEach { $0.didReceiveResponse(.failure(error), target: target) }
-                completion(result: .failure(error))
+                completion(.failure(error))
             }
         }
     }
@@ -309,16 +309,16 @@ internal extension MoyaProvider {
 }
 
 public func convertResponseToResult(_ response: HTTPURLResponse?, data: Data?, error: NSError?) ->
-    Result<Moya.Response, Moya.Error> {
+    Result<Moya.Response, MoyaError> {
     switch (response, data, error) {
     case let (.some(response), .some(data), .none):
         let response = Moya.Response(statusCode: response.statusCode, data: data, response: response)
         return .success(response)
     case let (_, _, .some(error)):
-        let error = Moya.Error.underlying(error)
+        let error = MoyaError.underlying(error)
         return .failure(error)
     default:
-        let error = Moya.Error.underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorUnknown, userInfo: nil))
+        let error = MoyaError.underlying(NSError(domain: NSURLErrorDomain, code: NSURLErrorUnknown, userInfo: nil))
         return .failure(error)
     }
 }
@@ -326,7 +326,7 @@ public func convertResponseToResult(_ response: HTTPURLResponse?, data: Data?, e
 internal struct CancellableWrapper: Cancellable {
     internal var innerCancellable: CancellableToken? = nil
     
-    private var isCancelled = false
+    var isCancelled = false
     
     internal func cancel() {
         innerCancellable?.cancel()

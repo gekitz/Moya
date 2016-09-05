@@ -1,10 +1,10 @@
 import Foundation
 import Alamofire
 
-public typealias Manager = Alamofire.Manager
-
 /// Choice of parameter encoding.
 public typealias ParameterEncoding = Alamofire.ParameterEncoding
+
+public typealias Manager = Alamofire.SessionManager
 
 /// Make the Alamofire Request type conform to our type, to prevent leaking Alamofire to plugins.
 extension Request: RequestType { }
@@ -25,7 +25,7 @@ public final class CancellableToken: Cancellable , CustomDebugStringConvertible 
         cancelAction()
     }
     
-    init(action: () -> Void){
+    init(action: @escaping () -> Void){
         self.cancelAction = action
         self.request = nil
     }

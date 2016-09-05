@@ -3,20 +3,22 @@ import Result
 
 /// Logs network activity (outgoing requests and incoming responses).
 public final class NetworkLoggerPlugin: PluginType {
-    private let loggerId = "Moya_Logger"
-    private let dateFormatString = "dd/MM/yyyy HH:mm:ss"
-    private let dateFormatter = DateFormatter()
+    
     private let separator = ", "
     private let terminator = "\n"
     private let cURLTerminator = "\\\n"
-    private let output: (_ items: Any..., _ separator: String, _ terminator: String) -> Void
-    private let responseDataFormatter: ((Data) -> (Data))?
+    private let output: (_ items: Any, _ separator: String, _ terminator: String) -> Void
+    
+    let dateFormatter = DateFormatter()
+    let loggerId = "Moya_Logger"
+    let dateFormatString = "dd/MM/yyyy HH:mm:ss"
+    let responseDataFormatter: ((Data) -> (Data))?
     
     /// If true, also logs response body data.
     public let verbose: Bool
     public let cURL: Bool
 
-    public init(verbose: Bool = false, cURL: Bool = false, output: (_ items: Any..., _ separator: String, _ terminator: String) -> Void = print, responseDataFormatter: ((Data) -> (Data))? = nil) {
+    public init(verbose: Bool = false, cURL: Bool = false, output: @escaping (_ items: Any, _ separator: String, _ terminator: String) -> Void, responseDataFormatter: ((Data) -> (Data))? = nil) {
         self.cURL = cURL
         self.verbose = verbose
         self.output = output
@@ -25,7 +27,7 @@ public final class NetworkLoggerPlugin: PluginType {
 
     public func willSendRequest(_ request: RequestType, target: TargetType) {
         if let request = request as? CustomDebugStringConvertible, cURL {
-            output(items: request.debugDescription, separator: separator, terminator: terminator)
+            output(request.debugDescription, separator, terminator)
             return
         }
         outputItems(logNetworkRequest(request.request))
@@ -41,9 +43,9 @@ public final class NetworkLoggerPlugin: PluginType {
 
     private func outputItems(_ items: [String]) {
         if verbose {
-            items.forEach { output(items: $0, separator: separator, terminator: terminator) }
+            items.forEach { output($0, separator, terminator) }
         } else {
-            output(items: items, separator: separator, terminator: terminator)
+            output(items, separator, terminator)
         }
     }
 }
@@ -52,7 +54,7 @@ private extension NetworkLoggerPlugin {
 
     private var date: String {
         dateFormatter.dateFormat = dateFormatString
-        dateFormatter.locale = Locale(localeIdentifier: "en_US_POSIX")
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         return dateFormatter.string(from: Date())
     }
 

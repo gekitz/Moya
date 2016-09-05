@@ -20,11 +20,11 @@ public final class NetworkActivityPlugin: PluginType {
 
     /// Called by the provider as soon as the request is about to start
     public func willSendRequest(_ request: RequestType, target: TargetType) {
-        networkActivityClosure(change: .Began)
+        networkActivityClosure(.Began)
     }
     
     /// Called by the provider as soon as a response arrives, even the request is cancelled.
-    public func didReceiveResponse(_ result: Result<Moya.Response, Moya.Error>, target: TargetType) {
-        networkActivityClosure(change: .Ended)
+    public func didReceiveResponse(_ result: Result<Moya.Response, MoyaError>, target: TargetType) {
+        networkActivityClosure(.Ended)
     }
 }
